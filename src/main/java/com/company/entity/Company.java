@@ -1,9 +1,5 @@
-package com.company.Object;
-
-import org.apache.commons.lang3.BooleanUtils;
-
+package com.company.entity;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public class Company {
     private Integer id; // id CSV object
@@ -68,6 +64,8 @@ public class Company {
     }
 
     public Boolean getIsHeadQuarter() {
+
+
         return isHeadQuarter;
     }
 

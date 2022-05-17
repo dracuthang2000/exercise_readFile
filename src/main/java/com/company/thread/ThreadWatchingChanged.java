@@ -1,16 +1,16 @@
-package com.company.threadWatchingChanged;
-import com.company.Object.Company;
-import com.company.services.ServiceCompanyIpm;
+package com.company.thread;
 
+import com.company.services.CompanyService;
+import com.company.services.CompanyServiceIpm;
 import java.nio.file.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ThreadWatchingChanged extends Thread {
     private String destDirectory;
     private String fileName;
+    private CompanyService companyService;
+    private volatile Boolean exit = false;
 
     public ThreadWatchingChanged(String destDirectory, String fileName) {
         this.destDirectory = destDirectory;
@@ -39,12 +39,16 @@ public class ThreadWatchingChanged extends Thread {
     // Watch event when changed file csv and print it
     @Override
     public void run() {
-        fileWatchChanged(destDirectory,fileName);
+        companyService = new CompanyServiceIpm();
+        while(true) {
+            System.out.println("The watching changed is processing......!");
+            if (fileWatchChanged(destDirectory, fileName)) {
+                companyService.getListCompanies(destDirectory + "\\" + fileName);
+                showValue(companyService);
+            }
+        }
     }
-
-    public void fileWatchChanged(String destDirectory,String fileName){
-        ServiceCompanyIpm serviceCompanyIpmCmp = new ServiceCompanyIpm();
-        List<Company> listCompanies = new ArrayList<>();
+    private Boolean fileWatchChanged(String destDirectory,String fileName){
         try (WatchService service = FileSystems.getDefault().newWatchService()) {
             Map<WatchKey, Path> keyMap = new HashMap<>();
             Path dir = Paths.get(destDirectory);
@@ -52,24 +56,22 @@ public class ThreadWatchingChanged extends Thread {
                     StandardWatchEventKinds.ENTRY_MODIFY),
                     dir);
             WatchKey watchKey;
-
             do {
                 watchKey = service.take();
-                Path eventDir = keyMap.get(watchKey);
                 for (WatchEvent<?> event : watchKey.pollEvents()) {
-                    WatchEvent.Kind<?> kind = event.kind();
                     Path eventPath = (Path) event.context();
                     if(eventPath.endsWith(fileName)){
-                        listCompanies = serviceCompanyIpmCmp.filterSortValue(serviceCompanyIpmCmp.getListCompanies(destDirectory+"\\"+fileName),"CH");
-                        System.out.println("Total capital that the country is in CH: " + listCompanies.stream().count());
-                        System.out.println("The name of companies that the country is in CH: ");
-                        listCompanies.forEach(company -> System.out.print(company.getName()+", "));
-                        System.out.println();
+                        return true;
                     }
                 }
             } while (watchKey.reset());
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
+        return false;
+    }
+    private void showValue(CompanyService companyService){
+        companyService.showValueOfCountry("CH");
     }
 }
